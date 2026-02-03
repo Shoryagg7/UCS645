@@ -1,0 +1,17 @@
+# Compiled executables
+ex1
+ex2
+ex3
+q1
+q2
+q3
+
+# Object files
+*.o
+*.obj
+
+# Compiled libraries
+*.a
+*.so
+*.dylib
+*.dll
