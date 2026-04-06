@@ -35,16 +35,17 @@ Given a matrix with **ny** rows and **nx** columns (all representing vectors), c
 
 ### Interface
 
-```cpp
-void correlate(int ny, int nx, const float* data, float* result)
+**Function Signature:**
+```
+correlate(ny, nx, data, result)
 ```
 
 **Parameters:**
 
 - `ny`: Number of vectors (rows)
 - `nx`: Dimension of each vector (columns)
-- `data`: Input matrix (row-major storage: `data[i*nx + j]`)
-- `result`: Output correlation matrix (lower triangular: `result[i + j*ny]` for `j ≤ i`)
+- `data`: Input matrix (row-major storage)
+- `result`: Output correlation matrix (lower triangular)
 
 ### Correlation Coefficient Formula
 
@@ -119,100 +120,62 @@ make debug         # Debug symbols
 ## 🔧 Implementation Levels
 
 ### Level 1: Sequential Baseline
-
 **Location:** `correlate_sequential()`
 
-```cpp
-for (int i = 0; i < ny; i++) {
-    for (int j = 0; j <= i; j++) {
-        covariance = 0.0;
-        for (int k = 0; k < nx; k++) {
-            covariance += (data[i][k] - mean_i) * (data[j][k] - mean_j);
-        }
-        result[i + j*ny] = covariance / (stddev_i * stddev_j);
-    }
-}
-```
+**Description:** Three nested loops calculating means, standard deviations, and correlation coefficients sequentially.
 
 **Characteristics:**
-
 - No parallelism
-- Reference for correctness
-- Single-threaded baseline
+- Reference implementation for correctness verification
+- Single-threaded baseline for performance comparison
 - **~2000 MFLOPS** on typical hardware
+- Two-phase algorithm: compute statistics first, then correlations
 
 ---
 
 ### Level 2: Parallel with OpenMP
-
 **Location:** `correlate_parallel()`
 
-```cpp
-#pragma omp parallel for        // Mean calculation
-for (int i = 0; i < ny; i++) { ... }
-
-#pragma omp parallel for        // Correlation calculation
-for (int i = 0; i < ny; i++) {
-    for (int j = 0; j <= i; j++) { ... }
-}
-```
+**Description:** Parallelizes the outer loops using OpenMP `parallel for` directives. Both the mean calculation phase and correlation calculation phase are parallelized independently.
 
 **Improvements:**
-
-- Outer loop parallelization
-- Automatic thread management
-- Load distribution across cores
+- Outer loop parallelization with OpenMP
+- Automatic thread distribution and management
+- Load balancing across cores
+- Two independent parallel sections (mean, then correlation)
 - **Expected: 4-8x speedup** @ 8 threads
 
 ---
 
-### Level 3: Optimized with Unrolling
-
+### Level 3: Optimized with Loop Unrolling
 **Location:** `correlate_optimized()`
 
-```cpp
-// 4x loop unrolling for ILP
-int k = 0;
-for (; k + 4 <= nx; k += 4) {
-    xi0 = data[i*nx + k] - mean_i;
-    xi1 = data[i*nx + k + 1] - mean_i;
-    xi2 = data[i*nx + k + 2] - mean_i;
-    xi3 = data[i*nx + k + 3] - mean_i;
-
-    covariance += xi0*y0 + xi1*y1 + xi2*y2 + xi3*y3;
-}
-```
+**Description:** Adds instruction-level parallelism through 4x loop unrolling. Processes four vector elements simultaneously to enable better instruction scheduling and reduced loop overhead.
 
 **Improvements:**
-
-- Instruction-level parallelism (ILP)
-- Reduced loop overhead
-- Better compiler vectorization
-- SIMD pragma hints
+- 4x loop unrolling increases instruction-level parallelism (ILP)
+- Reduces loop iteration count and branch overhead
+- Better compiler opportunities for vectorization
+- Improved resource utilization on superscalar CPUs
+- SIMD pragma hints to enable auto-vectorization
+- **Expected: 8-12x speedup** @ 8 threads
+- 15-25% additional speedup over level 2
 
 ---
 
-### Level 4: Highly Optimized
-
+### Level 4: Highly Optimized with SIMD
 **Location:** `correlate_highly_optimized()`
 
-```cpp
-#pragma omp parallel for simd    // Explicit SIMD
-for (int i = 0; i < ny; i++) {
-    #pragma omp simd reduction(+:sum, sum_sq)
-    for (int j = 0; j < nx; j++) {
-        sum += data[i*nx + j];
-        sum_sq += data[i*nx + j] * data[i*nx + j];
-    }
-}
-```
+**Description:** Combines multi-threading with explicit SIMD vectorization directives. Uses `omp simd` and `reduction` clauses for fine-grained parallelization.
 
 **Improvements:**
-
-- SIMD reduction operations
-- Explicit vectorization hints
-- Compiler auto-vectorization enabled
-- Combined multi-threading + vectorization
+- Explicit SIMD parallelization with `#pragma omp simd`
+- SIMD reduction for efficient vector accumulation
+- Aligned memory allocations and vectorization hints
+- Combined benefits of multi-threading AND vector instructions
+- Compiler auto-vectorizes inner loops with explicit guidance
+- **Expected: 10-14x speedup** @ 8 threads
+- Up to 50% additional speedup over level 3 on AVX systems
 
 ---
 
@@ -355,56 +318,54 @@ perf stat -e "cpu/event=0xc0,umask=0x00/" \
 
 ### 1. Loop Unrolling
 
-Reduces loop overhead and enables instruction scheduling:
+**Concept:** Process multiple array elements in each loop iteration instead of one, reducing loop overhead and enabling better CPU instruction scheduling.
 
-```cpp
-// 4x unroll
-for (k = 0; k +4 <= nx; k += 4)
-    result += a[k]*b[k] + a[k+1]*b[k+1] +
-              a[k+2]*b[k+2] + a[k+3]*b[k+3];
-```
+**Benefit:** 15-25% speedup typical, especially on CPUs with deep pipelines
 
-**Benefit:** 15-25% speedup typical
+**When to use:**
+- Inner loops with simple operations
+- When iteration count is known
+- When compiler can't auto-unroll effectively
 
-### 2. OpenMP SIMD
+---
 
-Explicit vectorization hints:
+### 2. OpenMP SIMD Vectorization
 
-```cpp
-#pragma omp simd reduction(+:sum)
-for (int i = 0; i < N; i++)
-    sum += a[i] * b[i];
-```
+**Concept:** Use explicit SIMD pragmas to tell the compiler to vectorize loops. Combined with multi-threading for maximum parallelism.
 
-**Benefit:** 2-4x speedup with AVX-256, 4-8x with AVX-512
+**Benefit:** 2-4x speedup with AVX-256 vectors, 4-8x with AVX-512
+
+**When to use:**
+- Loops with independent iterations
+- Regular memory access patterns
+- Data-parallel computations
+
+---
 
 ### 3. Parallel Reduction
 
-Efficient pattern for accumulation:
+**Concept:** Safely accumulate results from parallel threads without explicit locks. OpenMP handles synchronization automatically.
 
-```cpp
-#pragma omp parallel for reduction(+:total_sum)
-for (int i = 0; i < N; i++)
-    total_sum += expensive_compute(i);
-```
+**Benefit:** Correct synchronization with minimal overhead
 
-**Benefit:** Correct synchronization, no locks needed
+**When to use:**
+- Computing sums, products, min/max across parallel data
+- Avoiding lock contention
+- Maintaining numerical stability
 
-### 4. Memory Access Pattern
+---
 
-Improve cache utilization:
+### 4. Memory Access Pattern Optimization
 
-```cpp
-// Good: Row-major access (cache-friendly)
-for (int i = 0; i < ny; i++)
-    for (int j = 0; j < nx; j++)
-        process(data[i*nx + j]);  ✓
+**Concept:** Access memory in row-major order (iterate through contiguous elements) to maximize cache utilization and minimize miss rates.
 
-// Bad: Random jumping
-for (int j = 0; j < nx; j++)
-    for (int i = 0; i < ny; i++)
-        process(data[i*nx + j]);  ✗
-```
+**Key principles:**
+- Process data sequentially in the order it's stored in memory
+- Minimize cache line misses through spatial locality
+- Keep working set small (fit in L1/L2 cache)
+- Avoid random jumps through memory that cause cache misses
+
+**Benefit:** 2-5x improvement in cache efficiency and memory throughput
 
 ---
 
