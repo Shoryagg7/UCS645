@@ -1,0 +1,43 @@
+# Build artifacts
+*.o
+*.a
+*.so
+*.dylib
+*.exe
+*.out
+correlate
+
+# Debug files
+*.gch
+*.pch
+*.su
+*.gch.*
+*.plist
+
+# Profiling
+perf.data
+perf.data.old
+callgrind.out*
+cachegrind.out*
+massif.out*
+gmon.out
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Results/output
+*.txt
+results/
+output/
+*.csv
+
+# CMake
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile.local
