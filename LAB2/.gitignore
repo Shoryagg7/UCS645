@@ -1,0 +1,42 @@
+# Build artifacts
+*.o
+*.a
+*.so
+*.out
+*.exe
+
+# Executables
+Question1/q1_md
+Question2/q2_sw
+Question3/q3_heat
+
+# Results and outputs
+**/*_results.txt
+Results/
+*.png
+*.pdf
+
+# System files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# IDE files
+.vscode/
+.idea/
+*.code-workspace
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+
+# Temporary files
+*.tmp
+*.temp
+core
+core.*
