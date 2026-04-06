@@ -262,3 +262,16 @@ Different α in different regions
 - Physical realism
 - Minimal additional computational cost
 - Interesting load imbalance scenarios
+
+## References
+
+- Heat Equation: https://en.wikipedia.org/wiki/Heat_equation
+- Finite Difference Methods: https://en.wikipedia.org/wiki/Finite_difference_method
+- CFL Condition: https://en.wikipedia.org/wiki/Courant%E2%80%93Friedrichs%E2%80%93Lewy_condition
+- OpenMP Scheduling: https://www.openmp.org/spec-html/5.0/openmpsu41.html#x54-1440005
+
+---
+
+**Lab**: UCS645 - Parallel & Distributed Computing
+**Assignment**: LAB2 - Question 3
+**Date**: 2026

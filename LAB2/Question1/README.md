@@ -30,6 +30,21 @@ $$\vec{F} = -\nabla V(r) = 48\epsilon \frac{1}{r^2}\left[\left(\frac{\sigma}{r}\
 4. **Cutoff Radius**: Interactions beyond 2.5σ are ignored
 5. **Race Condition Handling**: Uses `#pragma omp atomic` for force accumulation
 
+### Parallelization Strategy
+
+```cpp
+#pragma omp parallel for collapse(2) num_threads(num_threads) \
+        schedule(static) reduction(+:total_energy)
+for (int i = 0; i < num_particles; i++) {
+    for (int j = i + 1; j < num_particles; j++) {
+        // Compute pairwise interactions
+        #pragma omp atomic  // Prevent race conditions
+        particles[i].fx += fx;
+        // ...
+    }
+}
+```
+
 **Techniques Used:**
 - `collapse(2)`: Parallelize nested loops for better work distribution
 - `schedule(static)`: Predictable work distribution
@@ -82,3 +97,13 @@ The nested loop structure creates potential load imbalance:
 3. **SIMD Vectorization**: Use SIMD for distance calculations
 4. **Memory Alignment**: Ensure particle data is aligned for cache efficiency
 
+## References
+
+- Lennard-Jones potential: https://en.wikipedia.org/wiki/Lennard-Jones_potential
+- OpenMP Atomic operations: https://www.openmp.org/spec-html/5.0/openmpsu59.html#x262-10910009.3.3
+
+---
+
+**Lab**: UCS645 - Parallel & Distributed Computing
+**Assignment**: LAB2 - Question 1
+**Date**: 2026

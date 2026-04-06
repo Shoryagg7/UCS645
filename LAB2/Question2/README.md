@@ -48,6 +48,22 @@ This anti-diagonal dependency structure is crucial for parallelization!
 
 Process matrix along anti-diagonals (diagonals). Cells on the same anti-diagonal are independent:
 
+```cpp
+for (int diagonal = 2; diagonal < rows + cols; diagonal++) {
+    #pragma omp parallel for num_threads(num_threads) schedule(dynamic)
+    for (int i = 1; i < rows; i++) {
+        int j = diagonal - i;
+        if (j >= 1 && j < cols) {
+            // Compute H(i,j) safely - all dependencies available
+            int match = matrix[i-1][j-1] + score;
+            int delete_op = matrix[i-1][j] + GAP;
+            int insert_op = matrix[i][j-1] + GAP;
+            matrix[i][j] = max({0, match, delete_op, insert_op});
+        }
+    }
+}
+```
+
 **Advantages:**
 - Natural parallelism along anti-diagonals
 - No synchronization needed between parallel iterations
@@ -145,3 +161,15 @@ Find optimal local alignment:
 2. **SIMD**: Vectorize similarity score calculations
 3. **Cutoff Threshold**: Stop computations below score threshold
 4. **GPU Offloading**: Massive parallelism on GPU (100s of threads)
+
+## References
+
+- Smith-Waterman Algorithm: https://en.wikipedia.org/wiki/Smith%E2%80%93Waterman_algorithm
+- Sequence Alignment: https://www.ncbi.nlm.nih.gov/Class/NAWBIS/Modules/Alignment/align_intro.html
+- OpenMP Wavefront Patterns: https://www.openmp.org/
+
+---
+
+**Lab**: UCS645 - Parallel & Distributed Computing
+**Assignment**: LAB2 - Question 2
+**Date**: 2026
