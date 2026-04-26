@@ -1,0 +1,2 @@
+method=cuda_bruteforce,n=1000000,q=100000,h2d_ms=0.718464,kernel_ms=0.438816,d2h_ms=0.073376,total_ms=1.23066,avg_query_us=0.0123066
+checksum=5689199642537138679

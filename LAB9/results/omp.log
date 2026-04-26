@@ -1,0 +1,2 @@
+method=omp_bruteforce,threads=20,n=1000000,q=100000,compress_sec=0.193539,query_sec=0.00452005,avg_query_us=0.0452005
+checksum=11980013610889140197

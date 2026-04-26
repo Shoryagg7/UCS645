@@ -1,0 +1,8 @@
+seed=42
+n=1000000
+q=100000
+value_range=1000000
+skewed=false
+small_max_len=128
+medium_max_len=2048
+large_max_len=32768
